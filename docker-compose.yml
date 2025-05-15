@@ -1,0 +1,46 @@
+services:
+  quillcast:
+    image: postgres
+    container_name: quillcast
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_USER: quillcast_admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: quillcast
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend_api
+    command: >
+      bash -c "
+              python manage.py makemigrations &&
+              python manage.py migrate &&
+              python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend/:/usr/src/backend/
+    ports:
+      - "5173:5173"
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - quillcast
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
